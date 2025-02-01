@@ -45,6 +45,8 @@ class Program
         //board.AddDevice(ticker);
         board.AddDevice(switchDevice);
 
+        //ConsoleHelper.PK("Press a key to begin");
+        
         await Task.Run(()=>{
             try{
                 board.Begin();
@@ -52,10 +54,13 @@ class Program
             {
                 Console.WriteLine("FucK: {0}", e.Message);
             }
+            
             while(!board.IsReady)
             {
-                Console.WriteLine("Waiting for board to become ready...");
                 Thread.Sleep(500); 
+                if(board.IsReady)break;
+                Console.WriteLine("Waiting for board to become ready...");
+                
             }
         });
         
