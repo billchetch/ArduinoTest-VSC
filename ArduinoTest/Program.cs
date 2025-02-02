@@ -46,7 +46,7 @@ class Program
         switchDevice.Switched += (sender, pinState) => {
             Console.WriteLine("{0} has pin state {1}", switchDevice.Name, switchDevice.PinState);
         };
-        //board.AddDevice(switchDevice);
+        board.AddDevice(switchDevice);
 
         //ConsoleHelper.PK("Press a key to begin");
         
