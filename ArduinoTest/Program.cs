@@ -36,14 +36,17 @@ class Program
             }
         };
 
-        //var ticker = new Ticker("testDevice01");
-        var switchDevice = new SwitchDevice("glob");
+        var ticker = new Ticker(10, "testDevice01");
+        ticker.Updated += (sender, props) =>{
+            Console.WriteLine("Ticker count is: {0}", ticker.Count);
+        };
+        //board.AddDevice(ticker);
+        
+        var switchDevice = new SwitchDevice(11, "glob");
         switchDevice.Switched += (sender, pinState) => {
             Console.WriteLine("{0} has pin state {1}", switchDevice.Name, switchDevice.PinState);
         };
-
-        //board.AddDevice(ticker);
-        board.AddDevice(switchDevice);
+        //board.AddDevice(switchDevice);
 
         //ConsoleHelper.PK("Press a key to begin");
         
@@ -54,13 +57,12 @@ class Program
             {
                 Console.WriteLine("FucK: {0}", e.Message);
             }
-            
+
+            Thread.Sleep(1000); 
             while(!board.IsReady)
             {
-                Thread.Sleep(500); 
-                if(board.IsReady)break;
                 Console.WriteLine("Waiting for board to become ready...");
-                
+                Thread.Sleep(3000);
             }
         });
         
