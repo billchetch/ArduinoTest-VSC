@@ -56,10 +56,6 @@ class Program
 
         board.ErrorReceived += (sender, eargs) => {
             Console.WriteLine("{0} resulted in an error {1}", sender, eargs.Error);
-            if(eargs.Error == ArduinoBoard.ErrorCode.DEVICE_ERROR && eargs.ErrorSource != null)
-            {
-                Console.WriteLine("{0} resulted in an error {1}", sender, eargs.Error);
-            }
         };
 
         //ConsoleHelper.PK("Press a key to begin");
