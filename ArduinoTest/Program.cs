@@ -1,17 +1,10 @@
 ﻿using System.IO.Ports;
 using Chetch.Messaging;
 using Chetch.Arduino;
+using Chetch.Utilities;
 using Chetch.Arduino.Devices;
 using Chetch.Arduino.Devices.Displays;
 using System.Threading.Tasks;
-using Chetch.Utilities;
-using System.Reflection.Metadata;
-using Chetch.Arduino.Devices.Infrared;
-using System.Diagnostics.Metrics;
-using System.Net.Http.Json;
-using System.Text.Json;
-using XmppDotNet.Xmpp.Muc;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace ArduinoTest;
 
@@ -88,63 +81,63 @@ class Program
 
     static async Task Main(string[] args)
     {
+        //ConsoleHelper.PK("Press a key to start");
+       
+        //foo();
 
-        var lgCommands = await GetDeviceCommands("LG Home Theater");
-        IRData auxOpt = lgCommands["AuxOpt"];
-        IRData function = lgCommands["Function"];
-
-        var bluetoothSequence = new List<IRData>();
-        bluetoothSequence.Add(auxOpt);
-        bluetoothSequence.Add(function);
-        bluetoothSequence.Add(function);
-
-
-        ArduinoBoard board = new ArduinoBoard("test");
-        board.Connection = new ArduinoSerialConnection(PATH2DEVICE, BAUDRATE);
-
-        board.Ready += (sender, ready) =>
-        {
+        //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
+        ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
+        board.Ready += (sender, ready) => {
             Console.WriteLine("Board is ready: {0}", ready);
             if (ready) printStatus(board);
         };
 
-        board.ErrorReceived += (sender, eargs) =>
-        {
+        board.ErrorReceived += (sender, eargs) => {
             Console.WriteLine("{0} resulted in an error {1}", sender, eargs.Error);
-            if (eargs.Error == ArduinoBoard.ErrorCode.DEVICE_ERROR && eargs.ErrorSource != null)
+            if(eargs.Error == ArduinoBoard.ErrorCode.DEVICE_ERROR && eargs.ErrorSource != null)
             {
-                Console.WriteLine("Specific error is: {0}", ((ArduinoDevice)eargs.ErrorSource).Error);
+                Console.WriteLine("{0} resulted in an error {1}", sender, eargs.Error);
             }
         };
 
+        var ticker = new Ticker(10, "testDevice01");
+        ticker.Updated += (sender, props) =>{
+            Console.WriteLine("Ticker count is: {0}", ticker.Count);
+        };
+        //board.AddDevice(ticker);
         
-        board.AddDevice(oled);
+        var switchDevice = new SwitchDevice(11, "glob");
+        switchDevice.Switched += (sender, pinState) => {
+            Console.WriteLine("{0} has pin state {1}", switchDevice.Name, switchDevice.PinState);
+        };
+        board.AddDevice(switchDevice);
 
-        board.AddDevice(lgInside);
+        //ConsoleHelper.PK("Press a key to begin");
+        
+        await Task.Run(()=>{
+            try{
+                board.Begin();
+            } catch (Exception e)
+            {
+                Console.WriteLine("FucK: {0}", e.Message);
+            }
 
-        IRTransmitter lgOutside = new IRTransmitter(LGOUTSIDE_ID, "outside");
+            Thread.Sleep(1000); 
+            while(!board.IsReady)
+            {
+                Console.WriteLine("Waiting for board to become ready...");
+                Thread.Sleep(3000);
+            }
+        });
+        
+        ConsoleHelper.PK("Press a key to send a test thingy");
+        switchDevice.TurnOn();
 
-        try
-        {
-            board.Begin();
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine("Error: {0}", e.Message);
-        }
+        ConsoleHelper.PK("Press a key to send a test thingy");
+        switchDevice.TurnOff();
 
-        Console.WriteLine("Enter a command");
-        var cmd = Console.ReadLine();
-        Console.WriteLine("Command entered: {0}", cmd);
-
-        switch (cmd.ToLower())
-        {
-            case "d":
-                //oled.DiplsayPreset(OLEDTextDisplay.DisplayPreset.HELLO_WORLD, 1000);
-                //oled.SetReportInterval(1000);
-                lgInside.TransmitAsync(bluetoothSequence, 1000);
-                break;
-        }
+        ConsoleHelper.PK("Press a key to disconnect");
+        board.End();
 
         ConsoleHelper.PK("Press a key to end");
         board.End();
