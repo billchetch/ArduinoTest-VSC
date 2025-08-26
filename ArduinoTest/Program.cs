@@ -7,6 +7,8 @@ using Chetch.Arduino.Devices.Displays;
 using System.Threading.Tasks;
 using Chetch.Arduino.Boards;
 using Chetch.Arduino.Connections;
+using System.Text;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace ArduinoTest;
 
@@ -46,7 +48,7 @@ class Program
 
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        CANBusMonitor board = new CANBusMonitor(2);
+        CANBusMonitor board = new CANBusMonitor(4);
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
 
         board.Ready += (sender, ready) => {
@@ -56,6 +58,40 @@ class Program
 
         board.ErrorReceived += (sender, eargs) => {
             Console.WriteLine("{0} resulted in an error {1}", sender, eargs.Error);
+        };
+
+        UInt32[] nodeTotals = new UInt32[board.BusSize];
+        int maxDiff = 0;
+        board.BusMessageReceived += (sender, eargs) =>
+        {
+            var msg = eargs.Message;
+
+            if (msg.Type == MessageType.DATA)
+            {
+                var sent = msg.Get<UInt32>(0);
+                var recv = msg.Get<UInt32>(1);
+                var total = sent + recv;
+
+                var idx = eargs.NodeID - 1;
+                nodeTotals[idx] = total;
+
+                StringBuilder sb = new StringBuilder();
+                int diff = 0;
+                for (int i = 0; i < nodeTotals.Length; i++)
+                {
+                    sb.Append(nodeTotals[i]);
+                    if (i < nodeTotals.Length - 1) sb.Append(",");
+
+                    if (i > 0)
+                    {
+                        int ct = (int)nodeTotals[i];
+                        int pt = (int)nodeTotals[i - 1];
+                        diff += Math.Abs(ct - pt);
+                    }   
+                }
+                if (diff > maxDiff) maxDiff = diff;
+                Console.WriteLine("Totals: {0} (Diff = {1}, MaxDiff = {2})", sb.ToString(), diff, maxDiff);
+            }
         };
 
         //ConsoleHelper.PK("Press a key to begin");
