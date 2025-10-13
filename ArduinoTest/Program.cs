@@ -73,37 +73,11 @@ class Program
             Console.WriteLine("Nodes Ready {0}", ready);
         };
 
-        RingBuffer<ReportData> log = new RingBuffer<ReportData>(100);
-
-        Dictionary<byte, ReportData> reportData = new Dictionary<byte, ReportData>();
         board.BusMessageReceived += (sender, eargs) =>
         {
             var msg = eargs.Message;
 
-            //Console.WriteLine("Bus message node {0} type {1} tag {2}", eargs.NodeID, eargs.Message.Type, eargs.Message.Tag);
-            if (msg.Type == MessageType.INFO)
-            {
-                try
-                {
-                    if (!reportData.ContainsKey(eargs.NodeID))
-                    {
-                        reportData[eargs.NodeID] = new ReportData(eargs.NodeID);
-                    }
-                    var rd = reportData[eargs.NodeID];
-                    rd.Read(msg);
-                    if (rd.Complete)
-                    {
-                        Console.WriteLine(rd.ToString());
-                        reportData.Remove(rd.NodeID);
-                        log.Add(rd);
-                        
-                    }
-                }
-                catch (Exception e)
-                {
-                    Console.WriteLine(e.Message);
-                }
-            }
+            
         };
 
         //ConsoleHelper.PK("Press a key to begin");
