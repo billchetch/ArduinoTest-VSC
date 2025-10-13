@@ -47,7 +47,9 @@ class Program
 
         //foo();
 
-        ArduinoBoard board = new ArduinoBoard("first");
+        //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
+        //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
+        CANBusMonitor board = new CANBusMonitor(3);
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
         
 
@@ -58,14 +60,55 @@ class Program
 
         board.ErrorReceived += (sender, eargs) => {
             Console.WriteLine("{0} resulted in an error {1}", sender, eargs.Error);
+            
         };
-        
-        
-        
+
+        board.NodeReady += (sender, node) =>
+        {
+            Console.WriteLine("Node {0} is ready", node.NodeID);
+        };
+
+        board.NodesReady += (sender, ready)=>
+        {
+            Console.WriteLine("Nodes Ready {0}", ready);
+        };
+
+        RingBuffer<ReportData> log = new RingBuffer<ReportData>(100);
+
+        Dictionary<byte, ReportData> reportData = new Dictionary<byte, ReportData>();
+        board.BusMessageReceived += (sender, eargs) =>
+        {
+            var msg = eargs.Message;
+
+            //Console.WriteLine("Bus message node {0} type {1} tag {2}", eargs.NodeID, eargs.Message.Type, eargs.Message.Tag);
+            if (msg.Type == MessageType.INFO)
+            {
+                try
+                {
+                    if (!reportData.ContainsKey(eargs.NodeID))
+                    {
+                        reportData[eargs.NodeID] = new ReportData(eargs.NodeID);
+                    }
+                    var rd = reportData[eargs.NodeID];
+                    rd.Read(msg);
+                    if (rd.Complete)
+                    {
+                        Console.WriteLine(rd.ToString());
+                        reportData.Remove(rd.NodeID);
+                        log.Add(rd);
+                        
+                    }
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                }
+            }
+        };
 
         //ConsoleHelper.PK("Press a key to begin");
         ConsoleHelper.CLRLF();
-        
+
         await Task.Run(() =>
         {
             try
@@ -85,11 +128,12 @@ class Program
             }
         });
         
+        ConsoleHelper.PK("Press a key to test");
+        board.MasterNode.TestBus(1);
+
         ConsoleHelper.PK("Press a key to disconnect");
         board.End();
 
         ConsoleHelper.PK("Press a key to end");
-        board.End();
-
     }
 }
