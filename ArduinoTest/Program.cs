@@ -9,6 +9,10 @@ using Chetch.Arduino.Boards;
 using Chetch.Arduino.Connections;
 using System.Text;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Chetch.Arduino.Devices.Comms;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.EntityFrameworkCore.Design;
 
 namespace ArduinoTest;
 
@@ -45,11 +49,9 @@ class Program
     {
         //ConsoleHelper.PK("Press a key to start");
 
-        //foo();
-
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        CANBusMonitor board = new CANBusMonitor(3);
+        CANBusMonitor board = new CANBusMonitor(1);
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
         
 
@@ -76,10 +78,18 @@ class Program
         board.BusMessageReceived += (sender, eargs) =>
         {
             var msg = eargs.Message;
-
-            
+            //Console.WriteLine("Received bus message {0} bytes {1} from {2} dir {3}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction);
+            if(msg.Type == MessageType.ERROR)
+            {
+                var node = board.GetNode(eargs.NodeID);
+                Console.WriteLine("Error {0}: {1}, {2}",
+                    node.NodeID,
+                    node.MCPNode.LastError,
+                    Chetch.Utilities.Convert.ToBitString(node.MCPNode.LastErrorData, "-"));
+            }
         };
 
+        
         //ConsoleHelper.PK("Press a key to begin");
         ConsoleHelper.CLRLF();
 
@@ -101,9 +111,70 @@ class Program
                 Thread.Sleep(3000);
             }
         });
+
+        System.Timers.Timer timer = new System.Timers.Timer();
+        timer.AutoReset = true;
+        timer.Interval = 3000;
+        timer.Elapsed += (sender, eargs) =>
+        {
+            ConsoleHelper.CLR("");
+            var allNodes = board.GetAllNodes();
+            foreach(var nd in allNodes)
+            {
+                Console.WriteLine("N{0}: NMs={1}, BMC={2}, ECF={3}, LE={4}, LED={5}",
+                    nd.NodeID,
+                    nd.MCPNode.NodeMillis,
+                    nd.BusMessageCount,
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.ErrorCodeFlags, "-"),
+                    nd.MCPNode.LastError,
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.LastErrorData, "-"));
+
+                foreach (var ec in nd.MCPNode.ErrorCounts)
+                {
+                    Console.WriteLine("  {0} = {1}", ec.Key, ec.Value);
+                }
+                Console.WriteLine("-----------------------");
+            }
+        };
+        timer.Start();
         
-        ConsoleHelper.PK("Press a key to test");
-        board.MasterNode.TestBus(1);
+        Int16 testNumber = 0;
+        bool endLoop = false;
+        do
+        {
+            Console.WriteLine("Enter test number (X to end): ");
+            ConsoleKeyInfo cki = Console.ReadKey(true);
+            testNumber = (byte)(cki.Key - 48);
+            if (testNumber < 10)
+            {
+                Console.WriteLine("Running test: {0}", testNumber);
+                board.TestBus((byte)testNumber, (Int16)((testNumber - 1)*10));
+            }
+            else
+            {
+                switch (cki.Key)
+                {
+                    case ConsoleKey.R:
+                        board.ResumeBus();
+                        break;
+
+                    case ConsoleKey.P:
+                        board.PauseBus();
+                        break;
+
+                    case ConsoleKey.G:
+                        board.PingNode(1);
+                        break;
+
+                    default:
+                        endLoop = true;
+                        break;
+                }
+            }
+
+            
+        } while (!endLoop);
+        
 
         ConsoleHelper.PK("Press a key to disconnect");
         board.End();
