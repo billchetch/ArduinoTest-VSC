@@ -22,7 +22,8 @@ class Program
     const string MAC_PATH2DEVICE = "/dev/tty.usb*";
     const string LINUX_PATH2DEVICE = "/dev/serial/by-id/usb-1a86*";
 
-    
+    static List<String> errorMessages = new List<String>();
+
     static String getPath2Device()
     {
         if (OperatingSystem.IsLinux())
@@ -82,10 +83,14 @@ class Program
             if(msg.Type == MessageType.ERROR)
             {
                 var node = board.GetNode(eargs.NodeID);
-                Console.WriteLine("Error {0}: {1}, {2}",
+                String emsg = String.Format("Error {0}: {1}, {2}",
                     node.NodeID,
                     node.MCPNode.LastError,
                     Chetch.Utilities.Convert.ToBitString(node.MCPNode.LastErrorData, "-"));
+                Console.WriteLine(emsg);
+
+                errorMessages.Add(emsg);
+                
             }
         };
 
@@ -164,6 +169,10 @@ class Program
 
                     case ConsoleKey.G:
                         board.PingNode(1);
+                        break;
+
+                    case ConsoleKey.I:
+                        board.InitialiseNodes();
                         break;
 
                     default:
