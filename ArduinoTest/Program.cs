@@ -126,13 +126,14 @@ class Program
             var allNodes = board.GetAllNodes();
             foreach(var nd in allNodes)
             {
-                Console.WriteLine("N{0}: NMs={1}, BMC={2}, ECF={3}, LE={4}, LED={5}",
+                Console.WriteLine("N{0}: NMs={1}, BMC={2}, ECF={3}, LE={4}, LED={5}, SyO={6}",
                     nd.NodeID,
                     nd.MCPNode.NodeMillis,
                     nd.BusMessageCount,
                     Chetch.Utilities.Convert.ToBitString(nd.MCPNode.ErrorCodeFlags, "-"),
                     nd.MCPNode.LastError,
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.LastErrorData, "-"));
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.LastErrorData, "-"),
+                    nd.MCPNode.SyncOffset);
 
                 foreach (var ec in nd.MCPNode.ErrorCounts)
                 {
@@ -141,7 +142,7 @@ class Program
                 Console.WriteLine("-----------------------");
             }
         };
-        timer.Start();
+        //timer.Start();
         
         Int16 testNumber = 0;
         bool endLoop = false;
@@ -173,6 +174,10 @@ class Program
 
                     case ConsoleKey.I:
                         board.InitialiseNodes();
+                        break;
+
+                    case ConsoleKey.S:
+                        timer.Start();
                         break;
 
                     default:
