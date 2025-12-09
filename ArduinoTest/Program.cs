@@ -94,6 +94,11 @@ class Program
             }
         };
 
+        board.MessageReceived += (sender, msg) =>
+        {
+            Console.WriteLine("Received  message {0}", msg.Type);
+        };
+
         
         //ConsoleHelper.PK("Press a key to begin");
         ConsoleHelper.CLRLF();
@@ -178,6 +183,10 @@ class Program
 
                     case ConsoleKey.S:
                         timer.Start();
+                        break;
+
+                    case ConsoleKey.T:
+                        board.ResetNodes();
                         break;
 
                     default:
