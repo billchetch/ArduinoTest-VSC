@@ -96,7 +96,9 @@ class Program
 
         board.MessageReceived += (sender, msg) =>
         {
-            Console.WriteLine("Received  message {0}", msg.Type);
+            if(msg.Type != MessageType.INFO && msg.Type != MessageType.DATA){
+                Console.WriteLine("Received message {0}", msg.Type);
+            }
         };
 
         
@@ -125,20 +127,47 @@ class Program
         System.Timers.Timer timer = new System.Timers.Timer();
         timer.AutoReset = true;
         timer.Interval = 3000;
+        Dictionary<byte, uint> messageCounts = new Dictionary<byte, uint>();
         timer.Elapsed += (sender, eargs) =>
         {
             ConsoleHelper.CLR("");
             var allNodes = board.GetAllNodes();
             foreach(var nd in allNodes)
             {
-                Console.WriteLine("N{0}: NMs={1}, BMC={2}, ECF={3}, LE={4}, LED={5}, SyO={6}",
+                if(!messageCounts.ContainsKey(nd.NodeID))messageCounts[nd.NodeID] = 0;
+
+                var mcd = nd.BusMessageCount - messageCounts[nd.NodeID];
+                messageCounts[nd.NodeID] = nd.BusMessageCount;
+                double mps = 1000.0 * (double)mcd / (double)timer.Interval;
+
+                Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}, SyO={4}, SF={5}",
                     nd.NodeID,
                     nd.MCPNode.NodeMillis,
                     nd.BusMessageCount,
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.ErrorCodeFlags, "-"),
+                    mps,
+                    nd.MCPNode.SyncOffset,
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.StatusFlags)
+                    );
+
+                Console.WriteLine("EF={0}, ERX={1}, ETX={2}",
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.ErrorFlags),
+                    nd.MCPNode.RXErrorCount,
+                    nd.MCPNode.TXErrorCount);
+
+                Console.WriteLine("LE={0}, LEO={1}, LED={2}",
                     nd.MCPNode.LastError,
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.LastErrorData, "-"),
-                    nd.MCPNode.SyncOffset);
+                    nd.MCPNode.LastErrorOn.ToString("s"),
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.LastErrorData, "-"));
+
+                Console.WriteLine("ECF={0}, LOG={1}",
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.ErrorCodeFlags, "-"),
+                    nd.MCPNode.ErrorLog.Count);
+
+                Console.WriteLine("RDY={0}, PRE={1}, STA={2}",
+                    nd.MCPNode.LastReadyOn.ToString("s"),
+                    nd.MCPNode.LastPresenceOn.ToString("s"),
+                    nd.MCPNode.LastStatusResponse.ToString("s"));
+
 
                 foreach (var ec in nd.MCPNode.ErrorCounts)
                 {
@@ -174,7 +203,7 @@ class Program
                         break;
 
                     case ConsoleKey.G:
-                        board.PingNode(1);
+                        board.PingNodes();
                         break;
 
                     case ConsoleKey.I:
