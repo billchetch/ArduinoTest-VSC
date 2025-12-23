@@ -127,24 +127,18 @@ class Program
         System.Timers.Timer timer = new System.Timers.Timer();
         timer.AutoReset = true;
         timer.Interval = 3000;
-        Dictionary<byte, uint> messageCounts = new Dictionary<byte, uint>();
         timer.Elapsed += (sender, eargs) =>
         {
             ConsoleHelper.CLR("");
             var allNodes = board.GetAllNodes();
             foreach(var nd in allNodes)
             {
-                if(!messageCounts.ContainsKey(nd.NodeID))messageCounts[nd.NodeID] = 0;
-
-                var mcd = nd.BusMessageCount - messageCounts[nd.NodeID];
-                messageCounts[nd.NodeID] = nd.BusMessageCount;
-                double mps = 1000.0 * (double)mcd / (double)timer.Interval;
-
+                var ba = board.BusActivity[nd.NodeID];
                 Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}, SyO={4}, SF={5}",
                     nd.NodeID,
                     nd.MCPNode.NodeMillis,
-                    nd.BusMessageCount,
-                    mps,
+                    ba.MessageCount,
+                    ba.MessageRate,
                     nd.MCPNode.SyncOffset,
                     Chetch.Utilities.Convert.ToBitString(nd.MCPNode.StatusFlags)
                     );
