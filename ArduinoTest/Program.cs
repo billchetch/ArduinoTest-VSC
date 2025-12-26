@@ -52,7 +52,7 @@ class Program
 
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        CANBusMonitor board = new CANBusMonitor(1);
+        CANBusMonitor board = new CANBusMonitor(2);
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
         
 
