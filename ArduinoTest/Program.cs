@@ -126,7 +126,7 @@ class Program
 
         System.Timers.Timer timer = new System.Timers.Timer();
         timer.AutoReset = true;
-        timer.Interval = 3000;
+        timer.Interval = 1000;
         timer.Elapsed += (sender, eargs) =>
         {
             ConsoleHelper.CLR("");
@@ -134,13 +134,13 @@ class Program
             foreach(var nd in allNodes)
             {
                 var ba = board.BusActivity[nd.NodeID];
-                Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}, MLC={4}, ALC={5:F1}",
+                Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}, MLC={4}, LTC={5}",
                     nd.NodeID,
                     nd.MCPNode.NodeMillis,
                     ba.MessageCount,
                     ba.MessageRate,
                     ba.MaxLatency,
-                    ba.AvgLatency);
+                    ba.Latency);
 
                 Console.WriteLine("SF={0}, EF={1}, ERX={2}, ETX={3}",
                     Chetch.Utilities.Convert.ToBitString(nd.MCPNode.StatusFlags),
