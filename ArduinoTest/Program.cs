@@ -134,15 +134,13 @@ class Program
             foreach(var nd in allNodes)
             {
                 var ba = board.BusActivity[nd.NodeID];
-                Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}, MLC={4}, ALC={5:F1}, SyO={6}",
+                Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}, MLC={4}, ALC={5:F1}",
                     nd.NodeID,
                     nd.MCPNode.NodeMillis,
                     ba.MessageCount,
                     ba.MessageRate,
                     ba.MaxLatency,
-                    ba.AvgLatency,
-                    nd.MCPNode.SyncOffset
-                    );
+                    ba.AvgLatency);
 
                 Console.WriteLine("SF={0}, EF={1}, ERX={2}, ETX={3}",
                     Chetch.Utilities.Convert.ToBitString(nd.MCPNode.StatusFlags),
