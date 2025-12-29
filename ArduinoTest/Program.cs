@@ -213,7 +213,7 @@ class Program
                         break;
 
                     case ConsoleKey.E:
-                        board.RaiseError(1, MCP2515.MCP2515ErrorCode.DEBUG_ASSERT);
+                        board.RaiseError(2, MCP2515.MCP2515ErrorCode.READ_FAIL, 7);
                         break;
 
                     default:
