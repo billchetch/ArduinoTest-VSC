@@ -212,6 +212,10 @@ class Program
                         board.ResetNodes();
                         break;
 
+                    case ConsoleKey.E:
+                        board.RaiseError(1, MCP2515.MCP2515ErrorCode.DEBUG_ASSERT);
+                        break;
+
                     default:
                         endLoop = true;
                         break;
