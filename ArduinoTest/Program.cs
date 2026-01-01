@@ -55,7 +55,7 @@ class Program
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
         
 
-        Message msg = MessageParser.Parse(board.MasterNode);
+        Message msg = MessageParser.Parse(MessageType.ALERT, board.MasterNode, "LastError,NodeID");
 
         board.Ready += (sender, ready) => {
             Console.WriteLine("Board is ready: {0}", ready);
