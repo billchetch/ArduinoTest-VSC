@@ -1,5 +1,6 @@
 ﻿using System.IO.Ports;
 using Chetch.Messaging;
+using Chetch.Messaging.Attributes;
 using Chetch.Arduino;
 using Chetch.Utilities;
 using Chetch.Arduino.Devices;
@@ -48,13 +49,13 @@ class Program
 
     static async Task Main(string[] args)
     {
-        //ConsoleHelper.PK("Press a key to start");
-
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         CANBusMonitor board = new CANBusMonitor(2);
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
         
+
+        Message msg = MessageParser.Parse(board.MasterNode);
 
         board.Ready += (sender, ready) => {
             Console.WriteLine("Board is ready: {0}", ready);
