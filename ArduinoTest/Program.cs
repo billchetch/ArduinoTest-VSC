@@ -57,6 +57,10 @@ class Program
 
         Message msg = MessageParser.Parse(MessageType.ALERT, board.MasterNode, "LastError,NodeID");
 
+        var s = msg.Serialize();
+
+        var msg2 = Message.Deserialize(s);
+
         board.Ready += (sender, ready) => {
             Console.WriteLine("Board is ready: {0}", ready);
             if (ready) printStatus(board);
