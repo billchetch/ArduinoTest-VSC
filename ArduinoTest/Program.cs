@@ -234,7 +234,7 @@ class Program
         
 
         ConsoleHelper.PK("Press a key to disconnect");
-        board.End();
+        await board.End();
 
         ConsoleHelper.PK("Press a key to end");
     }
