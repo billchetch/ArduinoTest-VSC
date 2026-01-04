@@ -223,6 +223,10 @@ class Program
                         board.RaiseError(2, MCP2515.MCP2515ErrorCode.READ_FAIL, 7);
                         break;
 
+                    case ConsoleKey.F:
+                        board.FinaliseNode(1);
+                        break;
+
                     default:
                         endLoop = true;
                         break;
