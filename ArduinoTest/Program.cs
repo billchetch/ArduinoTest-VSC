@@ -51,10 +51,20 @@ class Program
     {
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        CANBusMonitor board = new CANBusMonitor(3);
-        //CANBusMonitor board = new CANBusMonitor(1);
+        //CANBusMonitor board = new CANBusMonitor(3);
+        CANBusMonitor board = new CANBusMonitor(1);
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
         
+        SwitchDevice sw1 = new ActiveSwitch("sw1");
+        SwitchDevice sw2 = new ActiveSwitch("sw1");
+        sw2.Switched += (sender, on) =>
+        {
+          Console.WriteLine("Switch {0} on {1}", sw2.SID, on);  
+        };
+        board.AddDevice(sw1);
+
+        CANBusNode remoteNode = (CANBusNode)board.GetNode(2);
+        remoteNode.AddDevice(sw2);
         /*
         Message msg = MessageParser.Parse(MessageType.ALERT, board.MasterNode, "LastError,NodeID");
 
@@ -73,39 +83,36 @@ class Program
             
         };
 
-        board.NodeReady += (sender, node) =>
+        board.NodeReady += (sender, ready) =>
         {
-            Console.WriteLine("Node {0} is ready", node.NodeID);
+            ICANBusNode node = (ICANBusNode)sender;
+            Console.WriteLine("Node {0} is ready: {1}", node.NodeID, ready);
         };
 
-        board.NodesReady += (sender, ready)=>
+        board.NodeError += (sender, errorCode) =>
         {
-            Console.WriteLine("Nodes Ready {0}", ready);
+            ICANBusNode node = (ICANBusNode)sender;
+            Console.WriteLine("Node {0} errored: {1} {2}", node.NodeID, errorCode, Chetch.Utilities.Convert.ToBitString(node.MCPDevice.LastErrorData, "-"));
         };
+
 
         board.BusMessageReceived += (sender, eargs) =>
         {
             var msg = eargs.Message;
-            //Console.WriteLine("Received bus message {0} bytes {1} from {2} dir {3}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction);
-            if(msg.Type == MessageType.ERROR)
-            {
-                var node = board.GetNode(eargs.NodeID);
-                String emsg = String.Format("Error {0}: {1}, {2}",
-                    node.NodeID,
-                    node.MCPNode.LastError,
-                    Chetch.Utilities.Convert.ToBitString(node.MCPNode.LastErrorData, "-"));
-                Console.WriteLine(emsg);
-
-                errorMessages.Add(emsg);
-                
-            }
+            Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
+            
         };
 
         board.MessageReceived += (sender, msg) =>
         {
             if(msg.Type != MessageType.INFO && msg.Type != MessageType.DATA){
-                Console.WriteLine("Received message {0}", msg.Type);
+                //Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
             }
+        };
+
+        board.MessageSent += (sender, msg) =>
+        {
+            //Console.WriteLine("-----> Sent message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
         };
 
         
@@ -140,37 +147,34 @@ class Program
             var allNodes = board.GetAllNodes();
             foreach(var nd in allNodes)
             {
-                var ba = board.BusActivity[nd.NodeID];
-                Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}, MLC={4}, LTC={5}",
+                Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}",
                     nd.NodeID,
-                    nd.MCPNode.NodeMillis,
-                    ba.MessageCount,
-                    ba.MessageRate,
-                    ba.MaxLatency,
-                    ba.Latency);
+                    nd.MCPDevice.NodeMillis,
+                    nd.MCPDevice.MessageCount,
+                    nd.MCPDevice.MessageRate);
 
                 Console.WriteLine("SF={0}, EF={1}, ERX={2}, ETX={3}",
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.StatusFlags),
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.ErrorFlags),
-                    nd.MCPNode.RXErrorCount,
-                    nd.MCPNode.TXErrorCount);
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.StatusFlags),
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.ErrorFlags),
+                    nd.MCPDevice.RXErrorCount,
+                    nd.MCPDevice.TXErrorCount);
 
                 Console.WriteLine("LE={0}, LEO={1}, LED={2}",
-                    nd.MCPNode.LastError,
-                    nd.MCPNode.LastErrorOn.ToString("s"),
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.LastErrorData, "-"));
+                    nd.MCPDevice.LastError,
+                    nd.MCPDevice.LastErrorOn.ToString("s"),
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.LastErrorData, "-"));
 
                 Console.WriteLine("ECF={0}, LOG={1}",
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPNode.ErrorCodeFlags, "-"),
-                    nd.MCPNode.ErrorLog.Count);
+                    Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.ErrorCodeFlags, "-"),
+                    nd.MCPDevice.ErrorLog.Count);
 
                 Console.WriteLine("RDY={0}, PRE={1}, STA={2}",
-                    nd.MCPNode.LastReadyOn.ToString("s"),
-                    nd.MCPNode.LastPresenceOn.ToString("s"),
-                    nd.MCPNode.LastStatusResponse.ToString("s"));
+                    nd.MCPDevice.LastReadyOn.ToString("s"),
+                    nd.MCPDevice.LastPresenceOn.ToString("s"),
+                    nd.MCPDevice.LastStatusResponse.ToString("s"));
 
 
-                foreach (var ec in nd.MCPNode.ErrorCounts)
+                foreach (var ec in nd.MCPDevice.ErrorCounts)
                 {
                     Console.WriteLine("  {0} = {1}", ec.Key, ec.Value);
                 }
@@ -189,26 +193,22 @@ class Program
             if (testNumber < 10)
             {
                 Console.WriteLine("Running test: {0}", testNumber);
-                board.TestBus((byte)testNumber, (Int16)((testNumber - 1)*10));
+                //board.TestBus((byte)testNumber, (Int16)((testNumber - 1)*10));
             }
             else
             {
                 switch (cki.Key)
                 {
                     case ConsoleKey.R:
-                        board.ResumeBus();
                         break;
 
                     case ConsoleKey.P:
-                        board.PauseBus();
                         break;
 
                     case ConsoleKey.G:
-                        board.PingNodes();
                         break;
 
                     case ConsoleKey.I:
-                        board.InitialiseNodes();
                         break;
 
                     case ConsoleKey.S:
@@ -216,15 +216,17 @@ class Program
                         break;
 
                     case ConsoleKey.T:
-                        board.ResetNodes();
+                        sw2.TurnOn();
+                        break;
+
+                    case ConsoleKey.U:
+                        sw2.TurnOff();
                         break;
 
                     case ConsoleKey.E:
-                        board.RaiseError(2, MCP2515.MCP2515ErrorCode.READ_FAIL, 7);
                         break;
 
                     case ConsoleKey.F:
-                        board.FinaliseNode(1);
                         break;
 
                     default:
