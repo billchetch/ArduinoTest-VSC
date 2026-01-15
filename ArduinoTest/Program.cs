@@ -52,8 +52,8 @@ class Program
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //CANBusMonitor board = new CANBusMonitor(3);
-        //CANBusMonitor board = new CANBusMonitor(1);
-        CANBusMonitor board = new CANBusMonitor(0);
+        CANBusMonitor board = new CANBusMonitor(1);
+        //CANBusMonitor board = new CANBusMonitor(0);
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
         
         SwitchDevice sw1 = new ActiveSwitch("sw1");
@@ -63,14 +63,14 @@ class Program
         };
         board.AddDevice(sw1);
 
-        /*CANBusNode remoteNode = (CANBusNode)board.GetNode(2);
+        CANBusNode remoteNode = (CANBusNode)board.GetNode(2);
         SwitchDevice sw2 = new ActiveSwitch("sw2");
         sw2.Switched += (sender, on) =>
         {
-          Console.WriteLine("Switch {0} on {1}", sw2.SID, on);  
+          Console.WriteLine("::::::::::::::Switch {0} on {1}", sw2.SID, on);  
         };
         
-        remoteNode.AddDevice(sw2);*/
+        remoteNode.AddDevice(sw2);
         /*
         Message msg = MessageParser.Parse(MessageType.ALERT, board.MasterNode, "LastError,NodeID");
 
@@ -105,20 +105,20 @@ class Program
         board.BusMessageReceived += (sender, eargs) =>
         {
             var msg = eargs.Message;
-            Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
+            //Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
             
         };
 
         board.MessageReceived += (sender, msg) =>
         {
             if(msg.Type != MessageType.INFO){
-                Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
+                //Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
             }
         };
 
         board.MessageSent += (sender, msg) =>
         {
-            Console.WriteLine("-----> Sent message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
+            //Console.WriteLine("-----> Sent message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
         };
 
         
@@ -150,6 +150,7 @@ class Program
         timer.Elapsed += (sender, eargs) =>
         {
             ConsoleHelper.CLR("");
+            board.UpdateBusMessageRate();
             var allNodes = board.GetAllNodes();
             foreach(var nd in allNodes)
             {
@@ -222,16 +223,16 @@ class Program
                         break;
 
                     case ConsoleKey.T:
-                        for(int i = 0; i < 5; i++)
-                        {
-                            sw1.TurnOn();
-                            sw1.TurnOff();
-                        }
+                        sw1.TurnOn();
+                        sw2.TurnOn();
                         break;
 
                     case ConsoleKey.U:
                         sw1.TurnOff();
-                        //sw2.TurnOff();
+                        sw2.TurnOff();
+                        break;
+
+                    case ConsoleKey.V:
                         break;
 
                     case ConsoleKey.E:
