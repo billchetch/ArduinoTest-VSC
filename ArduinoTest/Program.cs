@@ -51,26 +51,23 @@ class Program
     {
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        //CANBusMonitor board = new CANBusMonitor(3);
-        CANBusMonitor board = new CANBusMonitor(1);
+        CANBusMonitor board = new CANBusMonitor(3);
+        //CANBusMonitor board = new CANBusMonitor(1);
         //CANBusMonitor board = new CANBusMonitor(0);
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
-        
-        SwitchDevice sw1 = new ActiveSwitch("sw1");
-        sw1.Switched += (sender, on) =>
+        var allNodes = board.GetAllNodes();
+        SwitchGroup switches = new SwitchGroup("switches");
+        foreach(var nd in allNodes)
         {
-          Console.WriteLine("..............Switch {0} on {1}", sw1.SID, on);  
-        };
-        board.AddDevice(sw1);
-
-        CANBusNode remoteNode = (CANBusNode)board.GetNode(2);
-        SwitchDevice sw2 = new ActiveSwitch("sw2");
-        sw2.Switched += (sender, on) =>
-        {
-          Console.WriteLine("::::::::::::::Switch {0} on {1}", sw2.SID, on);  
-        };
+            ActiveSwitch sw = new ActiveSwitch("sw" + nd.NodeID);
+            sw.Switched += (sender, on) =>
+            {
+                Console.WriteLine("..............Switch {0} on {1}", sw.SID, on);  
+            };
+            ((ArduinoBoard)nd).AddDevice(sw);
+            switches.Add(sw);
+        }    
         
-        remoteNode.AddDevice(sw2);
         /*
         Message msg = MessageParser.Parse(MessageType.ALERT, board.MasterNode, "LastError,NodeID");
 
@@ -152,8 +149,12 @@ class Program
             ConsoleHelper.CLR("");
             board.UpdateBusMessageRate();
             var allNodes = board.GetAllNodes();
+            Console.WriteLine("Bus {0}, BMC={1}, MPC={2:F1}", board.SID, board.BusMessageCount, board.BusMessageRate);
+
             foreach(var nd in allNodes)
             {
+                Console.WriteLine("-----------------------");
+
                 Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}",
                     nd.NodeID,
                     nd.MCPDevice.NodeMillis,
@@ -185,7 +186,6 @@ class Program
                 {
                     Console.WriteLine("  {0} = {1}", ec.Key, ec.Value);
                 }
-                Console.WriteLine("-----------------------");
             }
         };
         //timer.Start();
@@ -223,13 +223,11 @@ class Program
                         break;
 
                     case ConsoleKey.T:
-                        sw1.TurnOn();
-                        sw2.TurnOn();
+                        switches.TurnOn();
                         break;
 
                     case ConsoleKey.U:
-                        sw1.TurnOff();
-                        sw2.TurnOff();
+                        switches.TurnOff();
                         break;
 
                     case ConsoleKey.V:
