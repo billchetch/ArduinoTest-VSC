@@ -83,6 +83,10 @@ class Program
 
         board.ErrorReceived += (sender, eargs) => {
             Console.WriteLine("{0} resulted in an error {1}", sender, eargs.Error);
+            if(eargs.Error == ArduinoBoard.ErrorCode.DEVICE_ERROR)
+            {
+                Console.WriteLine("Message: {0}", eargs.ErrorMessage);
+            }
             
         };
 
@@ -121,18 +125,19 @@ class Program
         
         //ConsoleHelper.PK("Press a key to begin");
         ConsoleHelper.CLRLF();
-        Console.WriteLine("Beginning....");
         await Task.Run(() =>
         {
             try
             {
+                Console.WriteLine("------- Beginning {0}....", board.SID);
                 board.Begin();
             }
             catch (Exception e)
             {
                 Console.WriteLine("Oh dear: {0}", e.Message);
             }
-
+            Console.WriteLine("------- Waiting on {0}....", board.SID);
+            
             Thread.Sleep(1000);
             while (!board.IsReady)
             {
@@ -140,8 +145,7 @@ class Program
                 Thread.Sleep(3000);
             }
         });
-        Console.WriteLine("Begun!");
-
+        
         System.Timers.Timer timer = new System.Timers.Timer();
         timer.AutoReset = true;
         timer.Interval = 1000;
@@ -150,7 +154,7 @@ class Program
             ConsoleHelper.CLR("");
             board.UpdateBusMessageRate();
             var allNodes = board.GetAllNodes();
-            Console.WriteLine("Bus {0}, BMC={1}, MPC={2:F1}", board.SID, board.BusMessageCount, board.BusMessageRate);
+            Console.WriteLine("Bus {0}, BMC={1}, MPS={2:F1}", board.SID, board.BusMessageCount, board.BusMessageRate);
 
             foreach(var nd in allNodes)
             {
