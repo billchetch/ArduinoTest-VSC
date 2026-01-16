@@ -152,7 +152,7 @@ class Program
         timer.Elapsed += (sender, eargs) =>
         {
             ConsoleHelper.CLR("");
-            board.UpdateBusMessageRate();
+            
             var allNodes = board.GetAllNodes();
             Console.WriteLine("Bus {0}, BMC={1}, MPS={2:F1}", board.SID, board.BusMessageCount, board.BusMessageRate);
 
