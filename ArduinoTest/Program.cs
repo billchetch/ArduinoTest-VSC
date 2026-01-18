@@ -146,15 +146,12 @@ class Program
             }
         });
         
-        System.Timers.Timer timer = new System.Timers.Timer();
-        timer.AutoReset = true;
-        timer.Interval = 1000;
-        timer.Elapsed += (sender, eargs) =>
+        board.MasterNode.BusActivityUpdated += (sender, eargs) =>
         {
             ConsoleHelper.CLR("");
             
             var allNodes = board.GetAllNodes();
-            Console.WriteLine("Bus {0}, BMC={1}, MPS={2:F1}", board.SID, board.BusMessageCount, board.BusMessageRate);
+            Console.WriteLine("Bus {0}: {1} ({2})", board.SID, board.Activity == null ? "N/A" : board.Activity.ToString(), board.MasterNode.BusMessageCount);
 
             foreach(var nd in allNodes)
             {
@@ -224,7 +221,7 @@ class Program
                         break;
 
                     case ConsoleKey.S:
-                        timer.Start();
+                        //timer.Start();
                         break;
 
                     case ConsoleKey.T:
