@@ -47,13 +47,61 @@ class Program
         Console.WriteLine("Free memory: {0}", board.FreeMemory);
     }
 
+    static void printNodesStatus(CANBusMonitor board, bool clr = true)
+    {
+        if(clr)ConsoleHelper.CLR("");
+            
+        var allNodes = board.GetAllNodes();
+        Console.WriteLine("Bus {0}: {1} ({2})", board.SID, board.Activity == null ? "N/A" : board.Activity.ToString(), board.MasterNode.BusMessageCount);
+
+        foreach(var nd in allNodes)
+        {
+            Console.WriteLine("-----------------------");
+
+            Console.WriteLine("N{0}: State={1} NMs={2}, BMC={3}, MPS={4:F1}",
+                nd.NodeID,
+                nd.NodeState,
+                nd.MCPDevice.NodeMillis,
+                nd.MCPDevice.MessageCount,
+                nd.MCPDevice.MessageRate);
+
+            Console.WriteLine("SF={0}, EF={1}, ERX={2}, ETX={3}",
+                Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.StatusFlags),
+                Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.ErrorFlags),
+                nd.MCPDevice.RXErrorCount,
+                nd.MCPDevice.TXErrorCount);
+
+            Console.WriteLine("LE={0}, LEO={1}, LED={2}",
+                nd.MCPDevice.LastError,
+                nd.MCPDevice.LastErrorOn.ToString("s"),
+                Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.LastErrorData, "-"));
+
+            Console.WriteLine("ECF={0}, LOG={1}",
+                Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.ErrorCodeFlags, "-"),
+                nd.MCPDevice.ErrorLog.Count);
+
+            Console.WriteLine("RDY={0}, PRE={1}, STA={2}",
+                nd.MCPDevice.LastReadyOn.ToString("s"),
+                nd.MCPDevice.LastPresenceOn.ToString("s"),
+                nd.MCPDevice.LastStatusResponse.ToString("s"));
+
+
+            foreach (var ec in nd.MCPDevice.ErrorCounts)
+            {
+                Console.WriteLine("  {0} = {1}", ec.Key, ec.Value);
+            }
+        }
+    }
+
     static async Task Main(string[] args)
     {
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        //CANBusMonitor board = new CANBusMonitor(3);
+        //CANBusMonitor board = new CANBusMonitor(1);
         CANBusMonitor board = new CANBusMonitor(3);
         //CANBusMonitor board = new CANBusMonitor(0);
+        
+        
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
         var allNodes = board.GetAllNodes();
         SwitchGroup switches = new SwitchGroup("switches");
@@ -81,13 +129,18 @@ class Program
             if (ready) printStatus(board);
         };
 
-        board.ErrorReceived += (sender, eargs) => {
+        board.ErrorReceived += (sender, eargs) => 
+        {
             Console.WriteLine("{0} resulted in an error {1}", sender, eargs.Error);
             if(eargs.Error == ArduinoBoard.ErrorCode.DEVICE_ERROR)
             {
                 Console.WriteLine("Message: {0}", eargs.ErrorMessage);
             }
-            
+        };
+
+        board.ExceptionThrown += (sender, eargs) =>
+        {
+            Console.WriteLine("!!! {0} exception: {1}", board.SID, eargs.GetException().Message);
         };
 
         board.NodeReady += (sender, ready) =>
@@ -106,20 +159,39 @@ class Program
         board.BusMessageReceived += (sender, eargs) =>
         {
             var msg = eargs.Message;
-            //Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
+            if(msg.Type == MessageType.ERROR)
+            {
+                Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
+            }
             
         };
 
         board.MessageReceived += (sender, msg) =>
         {
             if(msg.Type != MessageType.INFO){
-                //Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
+                Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
+                /*switch (msg.Type)
+                {
+                    case MessageType.COMMAND_RESPONSE:
+                        Console.WriteLine("Original command: {0}", msg.Get<ArduinoDevice.DeviceCommand>(0));
+                        break;
+                }*/
             }
         };
 
         board.MessageSent += (sender, msg) =>
         {
             //Console.WriteLine("-----> Sent message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
+            switch (msg.Type)
+            {
+                case MessageType.COMMAND:
+                    //Console.WriteLine("Command: {0}", msg.Get<ArduinoDevice.DeviceCommand>(0));
+                    break;
+
+                case MessageType.ERROR_TEST:
+                    Console.WriteLine("---------> Sent error test!");
+                    break;
+            }
         };
 
         
@@ -148,47 +220,7 @@ class Program
         
         board.MasterNode.BusActivityUpdated += (sender, eargs) =>
         {
-            ConsoleHelper.CLR("");
-            
-            var allNodes = board.GetAllNodes();
-            Console.WriteLine("Bus {0}: {1} ({2})", board.SID, board.Activity == null ? "N/A" : board.Activity.ToString(), board.MasterNode.BusMessageCount);
-
-            foreach(var nd in allNodes)
-            {
-                Console.WriteLine("-----------------------");
-
-                Console.WriteLine("N{0}: NMs={1}, BMC={2}, MPS={3:F1}",
-                    nd.NodeID,
-                    nd.MCPDevice.NodeMillis,
-                    nd.MCPDevice.MessageCount,
-                    nd.MCPDevice.MessageRate);
-
-                Console.WriteLine("SF={0}, EF={1}, ERX={2}, ETX={3}",
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.StatusFlags),
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.ErrorFlags),
-                    nd.MCPDevice.RXErrorCount,
-                    nd.MCPDevice.TXErrorCount);
-
-                Console.WriteLine("LE={0}, LEO={1}, LED={2}",
-                    nd.MCPDevice.LastError,
-                    nd.MCPDevice.LastErrorOn.ToString("s"),
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.LastErrorData, "-"));
-
-                Console.WriteLine("ECF={0}, LOG={1}",
-                    Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.ErrorCodeFlags, "-"),
-                    nd.MCPDevice.ErrorLog.Count);
-
-                Console.WriteLine("RDY={0}, PRE={1}, STA={2}",
-                    nd.MCPDevice.LastReadyOn.ToString("s"),
-                    nd.MCPDevice.LastPresenceOn.ToString("s"),
-                    nd.MCPDevice.LastStatusResponse.ToString("s"));
-
-
-                foreach (var ec in nd.MCPDevice.ErrorCounts)
-                {
-                    Console.WriteLine("  {0} = {1}", ec.Key, ec.Value);
-                }
-            }
+            //printNodesStatus(board, true);
         };
         //timer.Start();
         
@@ -209,17 +241,23 @@ class Program
                 switch (cki.Key)
                 {
                     case ConsoleKey.R:
+                        board.ResetNode(1);
                         break;
 
                     case ConsoleKey.P:
+                        printNodesStatus(board, true);
+                        break;
+
+                    case ConsoleKey.E:
+                        board.RaiseNodeError(1, MCP2515.MCP2515ErrorCode.ALL_TX_BUSY, 3);
+                        //board.RaiseNodeError(1, 154, 3);
                         break;
 
                     case ConsoleKey.G:
+                        board.PingNode(0);
                         break;
 
-                    case ConsoleKey.I:
-                        break;
-
+                    
                     case ConsoleKey.S:
                         //timer.Start();
                         break;
@@ -235,10 +273,8 @@ class Program
                     case ConsoleKey.V:
                         break;
 
-                    case ConsoleKey.E:
-                        break;
-
                     case ConsoleKey.F:
+                        board.FinaliseNode(1);
                         break;
 
                     default:
