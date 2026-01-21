@@ -58,9 +58,11 @@ class Program
         {
             Console.WriteLine("-----------------------");
 
-            Console.WriteLine("N{0}: State={1} NMs={2}, BMC={3}, MPS={4:F1}",
+            Console.WriteLine("N{0}: State={1}",
                 nd.NodeID,
-                nd.NodeState,
+                nd.NodeState);
+            
+            Console.WriteLine("NMs={0}, BMC={1}, MPS={2:F1}",
                 nd.MCPDevice.NodeMillis,
                 nd.MCPDevice.MessageCount,
                 nd.MCPDevice.MessageRate);
@@ -103,9 +105,10 @@ class Program
         
         
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
-        var allNodes = board.GetAllNodes();
+        //var allNodes = board.GetAllNodes();
+        var remoteNodes = board.GetRemoteNodes();
         SwitchGroup switches = new SwitchGroup("switches");
-        foreach(var nd in allNodes)
+        foreach(var nd in remoteNodes)
         {
             ActiveSwitch sw = new ActiveSwitch("sw" + nd.NodeID);
             sw.Switched += (sender, on) =>
@@ -155,6 +158,10 @@ class Program
             Console.WriteLine("Node {0} errored: {1} {2}", node.NodeID, errorCode, Chetch.Utilities.Convert.ToBitString(node.MCPDevice.LastErrorData, "-"));
         };
 
+        board.NodeStateChanged += (sender, eargs) =>
+        {
+            Console.WriteLine("@@@@@ Node State Change!: N{0} went from {1} to {2}", eargs.NodeID, eargs.OldState, eargs.NewState);
+        };
 
         board.BusMessageReceived += (sender, eargs) =>
         {
@@ -169,7 +176,7 @@ class Program
         board.MessageReceived += (sender, msg) =>
         {
             if(msg.Type != MessageType.INFO){
-                Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
+                //Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
                 /*switch (msg.Type)
                 {
                     case MessageType.COMMAND_RESPONSE:
@@ -188,11 +195,16 @@ class Program
                     //Console.WriteLine("Command: {0}", msg.Get<ArduinoDevice.DeviceCommand>(0));
                     break;
 
+                case MessageType.RESET:
+                    Console.WriteLine("---------> Sent reset!");
+                    break;
+
                 case MessageType.ERROR_TEST:
                     Console.WriteLine("---------> Sent error test!");
                     break;
             }
         };
+
 
         
         //ConsoleHelper.PK("Press a key to begin");
@@ -271,6 +283,10 @@ class Program
                         break;
 
                     case ConsoleKey.V:
+                        break;
+
+                    case ConsoleKey.I:
+                        board.InitialiseNode(1);
                         break;
 
                     case ConsoleKey.F:
