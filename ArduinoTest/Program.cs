@@ -58,9 +58,10 @@ class Program
         {
             Console.WriteLine("-----------------------");
 
-            Console.WriteLine("N{0}: State={1}",
+            Console.WriteLine("N{0}: State={1} (MCPDevice.Ready={2})",
                 nd.NodeID,
-                nd.NodeState);
+                nd.NodeState,
+                nd.MCPDevice.IsReady);
             
             Console.WriteLine("NMs={0}, BMC={1}, MPS={2:F1}",
                 nd.MCPDevice.NodeMillis,
@@ -100,15 +101,21 @@ class Program
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //CANBusMonitor board = new CANBusMonitor(1);
-        CANBusMonitor board = new CANBusMonitor(3);
-        //CANBusMonitor board = new CANBusMonitor(0);
+        CANBusMonitor board = new CANBusMonitor(5);
+        /*board.AddRemoteNode(new CANBusNode(2));
+        board.AddRemoteNode(new CANBusNode(3));
+        board.AddRemoteNode(new CANBusNode(4));
+        board.AddRemoteNode(new CANBusNode(5));
+        board.AddRemoteNode(new CANBusNode(6));*/
+        //CANBusMonitor board = new CANBusMonitor(5);
         
         
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
+        
         //var allNodes = board.GetAllNodes();
         var remoteNodes = board.GetRemoteNodes();
         SwitchGroup switches = new SwitchGroup("switches");
-        foreach(var nd in remoteNodes)
+        /*foreach(var nd in remoteNodes)
         {
             ActiveSwitch sw = new ActiveSwitch("sw" + nd.NodeID);
             sw.Switched += (sender, on) =>
@@ -117,7 +124,7 @@ class Program
             };
             ((ArduinoBoard)nd).AddDevice(sw);
             switches.Add(sw);
-        }    
+        }*/
         
         /*
         Message msg = MessageParser.Parse(MessageType.ALERT, board.MasterNode, "LastError,NodeID");
@@ -175,7 +182,7 @@ class Program
 
         board.MessageReceived += (sender, msg) =>
         {
-            if(msg.Type != MessageType.INFO){
+            if(msg.Type != MessageType.INFO && msg.Type != MessageType.DATA){
                 //Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
                 /*switch (msg.Type)
                 {
@@ -188,9 +195,12 @@ class Program
 
         board.MessageSent += (sender, msg) =>
         {
-            //Console.WriteLine("-----> Sent message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
             switch (msg.Type)
             {
+                case MessageType.STATUS_REQUEST:
+                    Console.WriteLine("-----> Sent message {0} from Sender {1} with target {2}", msg.Type, sender.GetType().ToString(), msg.Target);
+                    break;
+            
                 case MessageType.COMMAND:
                     //Console.WriteLine("Command: {0}", msg.Get<ArduinoDevice.DeviceCommand>(0));
                     break;
@@ -266,7 +276,7 @@ class Program
                         break;
 
                     case ConsoleKey.G:
-                        board.PingNode(0);
+                        board.PingNode(6);
                         break;
 
                     
