@@ -101,7 +101,7 @@ class Program
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //CANBusMonitor board = new CANBusMonitor(1);
-        CANBusMonitor board = new CANBusMonitor(5);
+        CANBusMonitor board = new CANBusMonitor(6);
         /*board.AddRemoteNode(new CANBusNode(2));
         board.AddRemoteNode(new CANBusNode(3));
         board.AddRemoteNode(new CANBusNode(4));
