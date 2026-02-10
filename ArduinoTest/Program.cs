@@ -83,10 +83,11 @@ class Program
                 Chetch.Utilities.Convert.ToBitString(nd.MCPDevice.ErrorCodeFlags, "-"),
                 nd.MCPDevice.ErrorLog.Count);
 
-            Console.WriteLine("RDY={0}, PRE={1}, STA={2}",
+            Console.WriteLine("RDY={0}, PRE={1}, STA={2}, LMSG={3}",
                 nd.MCPDevice.LastReadyOn.ToString("s"),
                 nd.MCPDevice.LastPresenceOn.ToString("s"),
-                nd.MCPDevice.LastStatusResponse.ToString("s"));
+                nd.MCPDevice.LastStatusResponse.ToString("s"),
+                nd.MCPDevice.LastMessage.Type + " on " + nd.MCPDevice.LastMessageOn.ToString("s"));
 
 
             foreach (var ec in nd.MCPDevice.ErrorCounts)
@@ -100,14 +101,10 @@ class Program
     {
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        //CANBusMonitor board = new CANBusMonitor(1);
-        CANBusMonitor board = new CANBusMonitor(6);
-        /*board.AddRemoteNode(new CANBusNode(2));
-        board.AddRemoteNode(new CANBusNode(3));
+        CANBusMonitor board = new CANBusMonitor();
+        //CANBusMonitor board = new CANBusMonitor(6);
         board.AddRemoteNode(new CANBusNode(4));
-        board.AddRemoteNode(new CANBusNode(5));
-        board.AddRemoteNode(new CANBusNode(6));*/
-        //CANBusMonitor board = new CANBusMonitor(5);
+        
         
         
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
@@ -150,7 +147,7 @@ class Program
 
         board.ExceptionThrown += (sender, eargs) =>
         {
-            Console.WriteLine("!!! {0} exception: {1}", board.SID, eargs.GetException().Message);
+            //Console.WriteLine("!!! {0} exception: {1}", board.SID, eargs.GetException().Message);
         };
 
         board.NodeReady += (sender, ready) =>
