@@ -102,8 +102,15 @@ class Program
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         CANBusMonitor board = new CANBusMonitor();
+        SerialPinMaster spin = new SerialPinMaster("spm");
+        spin.Ready += (sender, ready) =>
+        {
+            Console.WriteLine("Serial Pin {0} with interval {1} ready: {2}", spin.Pin, spin.Interval, ready);
+        };
+
+        board.AddDevice(spin);
         //CANBusMonitor board = new CANBusMonitor(6);
-        board.AddRemoteNode(new CANBusNode(4));
+        //board.AddRemoteNode(new CANBusNode(4));
         
         
         
@@ -278,6 +285,7 @@ class Program
 
                     
                     case ConsoleKey.S:
+                        spin.Send(10);
                         //timer.Start();
                         break;
 
