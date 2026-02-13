@@ -252,6 +252,7 @@ class Program
         
         Int16 testNumber = 0;
         bool endLoop = false;
+        byte data2send = 0;
         do
         {
             Console.WriteLine("Enter test number (X to end): ");
@@ -285,7 +286,7 @@ class Program
 
                     
                     case ConsoleKey.S:
-                        spin.Send(10);
+                        spin.Send(data2send++);
                         //timer.Start();
                         break;
 
