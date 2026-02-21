@@ -101,14 +101,10 @@ class Program
     {
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        CANBusMonitor board = new CANBusMonitor();
-        SerialPinMaster spin = new SerialPinMaster("spm");
-        spin.Ready += (sender, ready) =>
-        {
-            Console.WriteLine("Serial Pin {0} with interval {1} ready: {2}", spin.Pin, spin.Interval, ready);
-        };
+        CANBusMonitor board = new CANBusMonitor(1);
+        WaterMaker waterMaker = new WaterMaker();
+        //board.AddRemoteNode(waterMaker);
 
-        board.AddDevice(spin);
         //CANBusMonitor board = new CANBusMonitor(6);
         //board.AddRemoteNode(new CANBusNode(4));
         
@@ -118,26 +114,7 @@ class Program
         
         //var allNodes = board.GetAllNodes();
         var remoteNodes = board.GetRemoteNodes();
-        SwitchGroup switches = new SwitchGroup("switches");
-        /*foreach(var nd in remoteNodes)
-        {
-            ActiveSwitch sw = new ActiveSwitch("sw" + nd.NodeID);
-            sw.Switched += (sender, on) =>
-            {
-                Console.WriteLine("..............Switch {0} on {1}", sw.SID, on);  
-            };
-            ((ArduinoBoard)nd).AddDevice(sw);
-            switches.Add(sw);
-        }*/
         
-        /*
-        Message msg = MessageParser.Parse(MessageType.ALERT, board.MasterNode, "LastError,NodeID");
-
-        var s = msg.Serialize();
-
-        var msg2 = Message.Deserialize(s);
-        */
-
         board.Ready += (sender, ready) => {
             Console.WriteLine("Board is ready: {0}", ready);
             if (ready) printStatus(board);
@@ -187,13 +164,13 @@ class Program
         board.MessageReceived += (sender, msg) =>
         {
             if(msg.Type != MessageType.INFO && msg.Type != MessageType.DATA){
-                //Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
-                /*switch (msg.Type)
+                Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
+                switch (msg.Type)
                 {
                     case MessageType.COMMAND_RESPONSE:
                         Console.WriteLine("Original command: {0}", msg.Get<ArduinoDevice.DeviceCommand>(0));
                         break;
-                }*/
+                }
             }
         };
 
@@ -286,16 +263,13 @@ class Program
 
                     
                     case ConsoleKey.S:
-                        spin.Send(data2send++);
                         //timer.Start();
                         break;
 
                     case ConsoleKey.T:
-                        switches.TurnOn();
                         break;
 
                     case ConsoleKey.U:
-                        switches.TurnOff();
                         break;
 
                     case ConsoleKey.V:
