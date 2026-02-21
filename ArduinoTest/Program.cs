@@ -10,7 +10,7 @@ using Chetch.Arduino.Boards;
 using Chetch.Arduino.Connections;
 using System.Text;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Chetch.Arduino.Devices.Comms;
+using Chetch.Arduino.Devices.Comms.CAN;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore.Design;
@@ -54,17 +54,20 @@ class Program
         var allNodes = board.GetAllNodes();
         Console.WriteLine("Bus {0}: {1} ({2})", board.SID, board.Activity == null ? "N/A" : board.Activity.ToString(), board.MasterNode.BusMessageCount);
 
-        foreach(var nd in allNodes)
+
+        /*foreach(var anode in allNodes)
         {
+            CANBusNode nd = (CANBusNode)anode;
+
             Console.WriteLine("-----------------------");
 
             Console.WriteLine("N{0}: State={1} (MCPDevice.Ready={2})",
                 nd.NodeID,
                 nd.NodeState,
-                nd.MCPDevice.IsReady);
+                nd.IsReady);
             
             Console.WriteLine("NMs={0}, BMC={1}, MPS={2:F1}",
-                nd.MCPDevice.NodeMillis,
+                nd.NodeMillis,
                 nd.MCPDevice.MessageCount,
                 nd.MCPDevice.MessageRate);
 
@@ -94,7 +97,7 @@ class Program
             {
                 Console.WriteLine("  {0} = {1}", ec.Key, ec.Value);
             }
-        }
+        }*/
     }
 
     static async Task Main(string[] args)
@@ -102,12 +105,24 @@ class Program
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         CANBusMonitor board = new CANBusMonitor(1);
-        WaterMaker waterMaker = new WaterMaker();
-        //board.AddRemoteNode(waterMaker);
+        /*WaterMaker waterMaker = new WaterMaker();
+        waterMaker.ModeSelector.Selected += (sender, selected) =>
+        {
+            Console.WriteLine("Mode Selector Pin: {0}", selected);
+        };
+        waterMaker.MessageReceived += (sender, msg) =>
+        {
+            Console.WriteLine("WM message {0} received for {1} ", msg.Type, msg.Target);   
+        };
+        board.AddRemoteNode(waterMaker);*/
 
-        //CANBusMonitor board = new CANBusMonitor(6);
-        //board.AddRemoteNode(new CANBusNode(4));
+        var remoteNode = board.GetRemoteNode(2);
         
+        GenericDisplay display = new GenericDisplay();
+        remoteNode.AddDevice(display);
+        PassiveSwitch sw1 = new PassiveSwitch("sw1");
+        remoteNode.AddDevice(sw1);
+
         
         
         board.Connection = new ArduinoSerialConnection(getPath2Device(), BAUDRATE);
@@ -131,7 +146,7 @@ class Program
 
         board.ExceptionThrown += (sender, eargs) =>
         {
-            //Console.WriteLine("!!! {0} exception: {1}", board.SID, eargs.GetException().Message);
+            Console.WriteLine("!!! {0} exception: {1}", board.SID, eargs.GetException().Message);
         };
 
         board.NodeReady += (sender, ready) =>
@@ -143,7 +158,8 @@ class Program
         board.NodeError += (sender, errorCode) =>
         {
             ICANBusNode node = (ICANBusNode)sender;
-            Console.WriteLine("Node {0} errored: {1} {2}", node.NodeID, errorCode, Chetch.Utilities.Convert.ToBitString(node.MCPDevice.LastErrorData, "-"));
+            //Console.WriteLine("Node {0} errored: {1} {2}", node.NodeID, errorCode, Chetch.Utilities.Convert.ToBitString(node.CANDevice.LastErrorData, "-"));
+            Console.WriteLine("Node {0} errored: {1}", node.NodeID, errorCode); 
         };
 
         board.NodeStateChanged += (sender, eargs) =>
@@ -154,16 +170,16 @@ class Program
         board.BusMessageReceived += (sender, eargs) =>
         {
             var msg = eargs.Message;
+            Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
             if(msg.Type == MessageType.ERROR)
             {
                 Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
             }
-            
         };
 
         board.MessageReceived += (sender, msg) =>
         {
-            if(msg.Type != MessageType.INFO && msg.Type != MessageType.DATA){
+            /*if(msg.Type != MessageType.INFO){ // && msg.Type != MessageType.DATA){
                 Console.WriteLine("<----- Received message {0} from Sender {1} with target {2}", msg.Type, msg.Sender, msg.Target);
                 switch (msg.Type)
                 {
@@ -171,7 +187,7 @@ class Program
                         Console.WriteLine("Original command: {0}", msg.Get<ArduinoDevice.DeviceCommand>(0));
                         break;
                 }
-            }
+            }*/
         };
 
         board.MessageSent += (sender, msg) =>
