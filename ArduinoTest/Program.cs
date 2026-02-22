@@ -104,24 +104,33 @@ class Program
     {
         //ArduinoBoard board = new ArduinoBoard(0x0043, 9600, Frame.FrameSchema.SMALL_NO_CHECKSUM);
         //ArduinoBoard board = new ArduinoBoard("first", 0x7523, 9600); //, Frame.FrameSchema.SMALL_NO_CHECKSUM);
-        CANBusMonitor board = new CANBusMonitor(1);
-        /*WaterMaker waterMaker = new WaterMaker();
+        CANBusMonitor board = new CANBusMonitor();
+        
+        WaterMaker waterMaker = new WaterMaker();
+
+        waterMaker.ModeSelector.Ready += (sender, ready) => 
+        {
+            Console.WriteLine("Mode Selector ready: {0}", ready);
+        };
+
         waterMaker.ModeSelector.Selected += (sender, selected) =>
         {
             Console.WriteLine("Mode Selector Pin: {0}", selected);
         };
         waterMaker.MessageReceived += (sender, msg) =>
         {
-            Console.WriteLine("WM message {0} received for {1} ", msg.Type, msg.Target);   
+            //Console.WriteLine("WM message {0} received for {1} ", msg.Type, msg.Target);   
         };
-        board.AddRemoteNode(waterMaker);*/
+        board.AddRemoteNode(waterMaker);
 
-        var remoteNode = board.GetRemoteNode(2);
+        /*
+        var remoteNode = new CANBusNode(2);
         
         GenericDisplay display = new GenericDisplay();
         remoteNode.AddDevice(display);
-        PassiveSwitch sw1 = new PassiveSwitch("sw1");
-        remoteNode.AddDevice(sw1);
+        //PassiveSwitch sw1 = new PassiveSwitch("sw1");
+        //remoteNode.AddDevice(sw1);
+        board.AddRemoteNode(remoteNode);*/
 
         
         
@@ -164,17 +173,17 @@ class Program
 
         board.NodeStateChanged += (sender, eargs) =>
         {
-            Console.WriteLine("@@@@@ Node State Change!: N{0} went from {1} to {2}", eargs.NodeID, eargs.OldState, eargs.NewState);
+            //Console.WriteLine("@@@@@ Node State Change!: N{0} went from {1} to {2}", eargs.NodeID, eargs.OldState, eargs.NewState);
         };
 
         board.BusMessageReceived += (sender, eargs) =>
         {
-            var msg = eargs.Message;
+            /*var msg = eargs.Message;
             Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
             if(msg.Type == MessageType.ERROR)
             {
                 Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
-            }
+            }*/
         };
 
         board.MessageReceived += (sender, msg) =>
