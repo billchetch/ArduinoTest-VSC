@@ -121,16 +121,16 @@ class Program
         {
             //Console.WriteLine("WM message {0} received for {1} ", msg.Type, msg.Target);   
         };
-        board.AddRemoteNode(waterMaker);
+        //board.AddRemoteNode(waterMaker);
 
-        /*
+        
         var remoteNode = new CANBusNode(2);
         
         GenericDisplay display = new GenericDisplay();
         remoteNode.AddDevice(display);
         //PassiveSwitch sw1 = new PassiveSwitch("sw1");
         //remoteNode.AddDevice(sw1);
-        board.AddRemoteNode(remoteNode);*/
+        board.AddRemoteNode(remoteNode);
 
         
         
@@ -155,7 +155,12 @@ class Program
 
         board.ExceptionThrown += (sender, eargs) =>
         {
-            Console.WriteLine("!!! {0} exception: {1}", board.SID, eargs.GetException().Message);
+            var ex = eargs.GetException();
+            if(ex is System.InvalidCastException)
+            {
+                Console.WriteLine("yes");
+            }
+            Console.WriteLine("!!!{0} exception: {1} {2}", board.SID, ex.GetType(), ex.Message);
         };
 
         board.NodeReady += (sender, ready) =>
@@ -178,12 +183,12 @@ class Program
 
         board.BusMessageReceived += (sender, eargs) =>
         {
-            /*var msg = eargs.Message;
+            var msg = eargs.Message;
             Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
             if(msg.Type == MessageType.ERROR)
             {
                 Console.WriteLine("<<<<<< Received bus message {0} bytes {1} from Node {2} dir {3} and target/sender {4}/{5}", msg.Type, eargs.CanData.Length, eargs.NodeID, eargs.Direction, msg.Target, msg.Sender);
-            }*/
+            }
         };
 
         board.MessageReceived += (sender, msg) =>
@@ -270,7 +275,6 @@ class Program
                 switch (cki.Key)
                 {
                     case ConsoleKey.R:
-                        board.ResetNode(1);
                         break;
 
                     case ConsoleKey.P:
@@ -278,17 +282,17 @@ class Program
                         break;
 
                     case ConsoleKey.E:
-                        board.RaiseNodeError(1, MCP2515.MCP2515ErrorCode.ALL_TX_BUSY, 3);
+                        //board.RaiseNodeError(1, MCP2515.MCP2515ErrorCode.ALL_TX_BUSY, 3);
                         //board.RaiseNodeError(1, 154, 3);
                         break;
 
                     case ConsoleKey.G:
-                        board.PingNode(6);
+                        board.GetRemoteNode(2).CANDevice.Ping();
                         break;
 
                     
                     case ConsoleKey.S:
-                        //timer.Start();
+                        board.SPINSendCommand(2, CANBusMonitor.SPINCommand.MCP_DISPLAY);
                         break;
 
                     case ConsoleKey.T:
@@ -301,11 +305,9 @@ class Program
                         break;
 
                     case ConsoleKey.I:
-                        board.InitialiseNode(1);
                         break;
 
                     case ConsoleKey.F:
-                        board.FinaliseNode(1);
                         break;
 
                     default:
